@@ -97,7 +97,7 @@ function updateWorkArea(){
             });
             
 
-            poka.damage(8);//RESTAR VIDA
+            poka.damage(500);//RESTAR VIDA
             rats[index] = null;
         }
     })
@@ -152,7 +152,7 @@ function updateWorkArea(){
                 junkyFood: elem.position(),
             });
 
-            poka.heal(8);//SUMAR VIDA
+            poka.heal(100);//SUMAR VIDA
 
             JunkyFood[index] = null;
         }
