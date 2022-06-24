@@ -1,7 +1,8 @@
 const canvas = document.getElementById("workArea")
 const ctx = canvas.getContext("2d")
 
-const soundtrack = new Audio('../audio/main.mp3');
+// NOTE: js load code from caller path, not relative to this file path
+const soundtrack = new Audio('./audio/main.mp3');
 
 let animationFrameReqID = null;
 let enemiesIntervalID = null;
@@ -38,8 +39,9 @@ let JunkyFood = []
 const pokaY = CANVAS_DIMENSIONS.height-MR_POKA_SIZE-MR_POKA_OFFSET;
 let poka = null;
 
+// NOTE: js load code from caller path, not relative to this file path
 let gameOver = new Image()
-gameOver.src = "../img/GAMEOVER1.png";
+gameOver.src = "./img/GAMEOVER1.png";
 
 // const jokuY = CANVAS_DIMENSIONS.height-MR_JOKU_SIZE;//*************************** */
 // const joku = new Joku(500,0,ctx)
