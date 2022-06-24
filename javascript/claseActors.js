@@ -105,7 +105,6 @@ class Actors {
 
     // dibuja sin animación
     redraw(){
-        // this.ctx.fillRect(this.x,this.y, 30, 30)//add image by fillRect ("../img/MrPoka.png")
         this.ctx.drawImage(this.img, this.x, this.y, this.size, this.size)
     }
 }

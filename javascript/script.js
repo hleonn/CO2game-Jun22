@@ -1,7 +1,7 @@
 const canvas = document.getElementById("workArea")
 const ctx = canvas.getContext("2d")
 
-const soundtrack = new Audio('../audio/main.mp3');//MUSICA      '../audio/main.mp3'*/
+const soundtrack = new Audio('/audio/main.mp3');
 
 let animationFrameReqID = null;
 let enemiesIntervalID = null;
@@ -39,7 +39,7 @@ const pokaY = CANVAS_DIMENSIONS.height-MR_POKA_SIZE-MR_POKA_OFFSET;
 let poka = null;
 
 let gameOver = new Image()
-gameOver.src = "../img/GAMEOVER1.png";
+gameOver.src = "/img/GAMEOVER1.png";
 
 // const jokuY = CANVAS_DIMENSIONS.height-MR_JOKU_SIZE;//*************************** */
 // const joku = new Joku(500,0,ctx)
@@ -84,11 +84,10 @@ function intersects(r1, r2) { // -> should return a boolean
 //actors.damage(100)// cuando tenga 1000 puntos recibira dano
 
 function updateWorkArea() {
-    
-    console.log("running working area")
+    // console.log("running working area")
     ctx.clearRect(0, 0, 900, 600)
 
-    //******** */
+
 
     new GameTrack(CANVAS_DIMENSIONS.width, CANVAS_DIMENSIONS.height, ctx)
 
@@ -114,12 +113,10 @@ function updateWorkArea() {
         ratInstance.redraw()
 
         if (intersects(ratInstance.position(), poka.position())) {
-            console.log('substract points', {
-                poka: poka.position(),
-                rat: ratInstance.position(),
-            });
-            
-
+            // console.log('substract points', {
+            //     poka: poka.position(),
+            //     rat: ratInstance.position(),
+            // });
             poka.damage(500);//RESTAR VIDA
             rats[index] = null;    
         }
@@ -130,36 +127,13 @@ function updateWorkArea() {
     })
                                     //CAIDA DE OBJETOS
     // make mr joku fall
-    // joku.y += 3
-    // joku.redraw()
+    //joku.y += 3
+    joku.redraw()
     // // make hamburger fall
     // hamburger.y += 3
     // hamburger.redraw()
-    // // make coca fall
-    // coca.y += 3
-    // coca.redraw()
-    // // make donuts fall
-    // donuts.y += 3
-    // donuts.redraw()
-    // // make potatos fall
-    // potatos.y += 3
-    // potatos.redraw()
-
-    //const hamburgerY = CANVAS_DIMENSIONS.height-HAMBURGER_SIZE;+++++++++++++++++++++++++++++++++
-    //new Hamburger(10,0,ctx)
-
-    //const cocaY = CANVAS_DIMENSIONS.height-COCA_SIZE;
-    //new Coca(50,0,ctx)
-
-    //const donutsY = CANVAS_DIMENSIONS.height-DONUTS_SIZE;
-    //new Donuts(100,0,ctx)
-
-    //const potatosY = CANVAS_DIMENSIONS.height-POTATOS_SIZE;
-    //new Potatos(150,0,ctx)
-
-    /****const ratY =CANVAS_DIMENSIONS.height-RAT_SIZE-RAT_OFFSET;;
-    new Rat(850,525,ctx)  se movio a la linea 83 y 84*/
     
+
     //NEW
     JunkyFood.forEach((elem, index)=> {
         if (elem == null) return;
@@ -168,12 +142,11 @@ function updateWorkArea() {
         //elem.x += 1
         elem.redraw ()
 
-
         if (intersects(elem.position(), poka.position())) {
-            console.log('add points', {
-                poka: poka.position(),
-                junkyFood: elem.position(),
-            });
+            // console.log('add points', {
+            //     poka: poka.position(),
+            //     junkyFood: elem.position(),
+            // });
 
             poka.heal(100);//SUMAR VIDA
 
@@ -182,17 +155,6 @@ function updateWorkArea() {
     })
 
 
-//     //SUMAR PUNTOS AL TOCAR COMIDA
-//     JunkyFood.forEach((puki) =>{
-//         puki.y = 5                 //.x -= 5
-//         puki.redraw()
-
-//     if (intersects(JunkyFood.position(), poka.position())) {
-//         console.log('add points', {
-//             poka: poka.position(),
-//             junkyFood: JunkyFood.position(),
-//         });
-        
 
 //         poka.damage(8);//SUMAR VIDA
 //     }
@@ -218,7 +180,7 @@ function ratsEnemies (){//********* */
     const numeros = [1,32,5,38,29] //****** */
 
     if (numeros.includes(ratasEnElPiso)) {
-        console.log("Add enemy")
+        // console.log("Add enemy")
         // const randomOffset = Math.floor(Math.random()*MAP_TRACK.height)
         const ratY = CANVAS_DIMENSIONS.height-_UNDERGROUND_HEIGHT-Rat.size; // randomOffset;
         const rat = new Rat(850, ratY, ctx); // instance
@@ -266,7 +228,7 @@ document.addEventListener("keydown", (event) => {
     }
 
     if (event.key ==  "ArrowRight") {
-        console.log("Mover a la Derecha")
+        // console.log("Mover a la Derecha")
         poka.moverAlFrente()
     }
 

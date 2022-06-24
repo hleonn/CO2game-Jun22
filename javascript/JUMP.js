@@ -3,7 +3,7 @@ linea 67-82
 updateWorkArea
 
 if(intersects(hamburger.position(),poka.position())){//position is correct?
-    console.log('Add points',{
+    
     poka:poka.position(),
     hamb: hamburger.position(),     //es correcto?   
     });
@@ -38,7 +38,7 @@ function startGame(){
     
     updateWorkArea()
 
-     when the game starts, create a timer to automatically add a new enemy every 500ms
+     
     setInterval( () => {
         addRandomJunkFood()
     }, 1000);
