@@ -1,7 +1,7 @@
 const canvas = document.getElementById("workArea")
 const ctx = canvas.getContext("2d")
 
-const soundtrack = new Audio('/audio/main.mp3');
+const soundtrack = new Audio('../audio/main.mp3');
 
 let animationFrameReqID = null;
 let enemiesIntervalID = null;
@@ -60,7 +60,9 @@ function startGame(){
     canvas.classList.remove("noShow")
     updateWorkArea()
 
-    soundtrack.play();//MUSICA*******************/
+    //MUSICA*******************/
+    soundtrack.currentTime = 0;
+    soundtrack.play();
 
     // when the game starts, create a timer to automatically add a new enemy every 500ms
     enemiesIntervalID = setInterval( () => {
@@ -87,11 +89,12 @@ function updateWorkArea() {
     // console.log("running working area")
     ctx.clearRect(0, 0, 900, 600)
 
-
-
     new GameTrack(CANVAS_DIMENSIONS.width, CANVAS_DIMENSIONS.height, ctx)
 
     if (!poka.estaVivo()) {
+        // pause and reset soundtrack
+        soundtrack.pause();
+
         const restart = document.getElementById("gameover")
         restart.style.display = "block"
         canvas.classList.add("noShow")
