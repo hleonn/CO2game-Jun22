@@ -33,12 +33,12 @@ class Actors {
     }
 
     // afectar con daño
-    damage(dam){//metodo, porque existe dentro de una clase
+    damage(dam){
         this.vida -= dam
     }
 
     // agregar vida
-    heal(v){//metodo, porque existe dentro de una clase
+    heal(v){
         this.vida += v
     }
 
@@ -94,11 +94,14 @@ class Actors {
     }
 
     estaVivo(){
-        if (this.vida > 100){//check live
-            return true
-        }
-        return false
+        return this.vida > 0;
+
+        // if (this.vida > 0){
+        //     return true
+        // }
+        // return false //alert ("Dead")
     }
+
 
     // dibuja sin animación
     redraw(){

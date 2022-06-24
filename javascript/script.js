@@ -1,7 +1,11 @@
 const canvas = document.getElementById("workArea")
 const ctx = canvas.getContext("2d")
 
-const soundtrack = new Audio('../audio/main.mp3');//MUSICA*/
+const soundtrack = new Audio('../audio/main.mp3');//MUSICA      '../audio/main.mp3'*/
+
+let animationFrameReqID = null;
+let enemiesIntervalID = null;
+let junkFoodIntervalID = null;
 
 const keys = {
     jump: false,
@@ -26,13 +30,16 @@ const MR_JOKU_SIZE = 200;
 
 const RAT_OFFSET = 60;
 
-const rats = []
-const undergroundRats = []
+let rats = []
+let undergroundRats = []
 //NUEVO
-const JunkyFood = []
+let JunkyFood = []
 
 const pokaY = CANVAS_DIMENSIONS.height-MR_POKA_SIZE-MR_POKA_OFFSET;
-const poka = new Poka(10, pokaY, ctx) //instancia
+let poka = null;
+
+let gameOver = new Image()
+gameOver.src = "../img/GAMEOVER1.png";
 
 // const jokuY = CANVAS_DIMENSIONS.height-MR_JOKU_SIZE;//*************************** */
 // const joku = new Joku(500,0,ctx)
@@ -42,21 +49,26 @@ const poka = new Poka(10, pokaY, ctx) //instancia
 // const potatos = new Potatos(300,0,ctx) //Ubicacion */
 
 function startGame(){
-    const btnStart= document.getElementById("start")
-    btnStart.style.display = "none"
-    btnStart.classList.add = "noShow"
+    // reset
+    poka = new Poka(10, pokaY, ctx) //instancia
+    JunkyFood = [];
+    rats = [];
+    undergroundRats = [];
+
+    document.getElementById("start").style.display = 'none';
+    document.getElementById("gameover").style.display = 'none';
     canvas.classList.remove("noShow")
     updateWorkArea()
 
     soundtrack.play();//MUSICA*******************/
 
     // when the game starts, create a timer to automatically add a new enemy every 500ms
-    setInterval( () => {
+    enemiesIntervalID = setInterval( () => {
         ratsEnemies()
     }, 500);
     
     // NUEVO
-    setInterval( () => {
+    junkFoodIntervalID = setInterval( () => {
         addRandomJunkFood()
     }, 1000);
 }
@@ -71,7 +83,7 @@ function intersects(r1, r2) { // -> should return a boolean
 //actors.moverAlFrente()
 //actors.damage(100)// cuando tenga 1000 puntos recibira dano
 
-function updateWorkArea(){
+function updateWorkArea() {
     
     console.log("running working area")
     ctx.clearRect(0, 0, 900, 600)
@@ -80,11 +92,22 @@ function updateWorkArea(){
 
     new GameTrack(CANVAS_DIMENSIONS.width, CANVAS_DIMENSIONS.height, ctx)
 
+    if (!poka.estaVivo()) {
+        const restart = document.getElementById("gameover")
+        restart.style.display = "block"
+        canvas.classList.add("noShow")
+
+        cancelAnimationFrame(animationFrameReqID);
+        clearInterval(enemiesIntervalID);
+        clearInterval(junkFoodIntervalID);
+        return;
+    }
+
     poka.animate(keys);
 
 
     //RESTAR PUNTOS AL TOCAR RATA
-    rats.forEach((ratInstance, index) =>{
+    rats.forEach((ratInstance, index) => {
         if (ratInstance == null) return;
 
         ratInstance.x -= 5
@@ -98,7 +121,7 @@ function updateWorkArea(){
             
 
             poka.damage(500);//RESTAR VIDA
-            rats[index] = null;
+            rats[index] = null;    
         }
     })
 
@@ -177,7 +200,7 @@ function updateWorkArea(){
 
 
     mostrarDatos(poka.vida, poka.x, poka.y)
-    requestAnimationFrame(updateWorkArea)
+    animationFrameReqID = requestAnimationFrame(updateWorkArea)
 }
 
 function mostrarDatos(vida,x,y){
@@ -238,7 +261,7 @@ function addRandomJunkFood(){
 //LEFT & RIGHT MOVE
 document.addEventListener("keydown", (event) => {
     if (event.key == "ArrowLeft") {
-        console.log("Mover a la Izquierda")
+        
         poka.moverAtras()
     }
 

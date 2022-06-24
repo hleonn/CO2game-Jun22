@@ -5,25 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>CO2</title>
-    <link rel="icon" type="image/x-icon" href="./img/name2.png">
+    <link rel="icon" type="image/x-icon" href="./img/name2.png"><!--  -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Georama:wght@500&display=swap" rel="stylesheet">
-    <link rel ="stylesheet" href="./estilos/styles.css">
+    <link rel ="stylesheet" href="./estilos/styles.css"><!--  -->
+    
 </head>
 <body>
   
     
     <div class="container">
         <button id="start" onclick="startGame()">Start Game</button>
+        <div id="gameover" style="display:none">
+            <div>
+                <h2>GAME OVER</h2>
+                <button id="restart" onclick="startGame()">Play Again</button>
+            </div>
+        </div>
         <!-- Check restart button -->
         <!--<button id="restart">Restart</button>  -->
         
         <canvas width="900" height="600" id="workArea" class="noShow"></canvas>
     </div>
     
-    <script src="./javascript/claseActors.js"></script>
-    <script src="./javascript/clasePoka.js"></script>
-    <script src="./javascript/script.js"></script>
+    <script src="./javascript/claseActors.js"></script><!--  -->
+    <script src="./javascript/clasePoka.js"></script><!--  -->
+    <script src="./javascript/script.js"></script><!--  -->
 </body>
 </html>

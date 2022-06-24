@@ -22,7 +22,7 @@ body{
 
 
 } 
-#start{
+button{
     padding:15px;
     background-color:yellow;
     font-family: 'Georama',sans-serif;
@@ -32,7 +32,8 @@ body{
     cursor:pointer;
 
 }
-#start:hover{
+
+button:hover{
     background-color: black;
     color: white;
     border: 3px solid white;
@@ -44,5 +45,26 @@ canvas{
 }
 .noShow{
     display: none;
-    
+}
+
+#gameover {
+    background-image: url("../img/GAMEOVER1.png");
+    background-repeat: no-repeat;
+    background-size: contain;
+    width: 350px;
+    height:200px;
+}
+
+#gameover div {
+    color: white;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+#gameover h2 {
+    margin-bottom: 30px;
 }
