@@ -1,6 +1,6 @@
 const gravity = 1;
 
-class Actors {
+export class Actors {
     constructor(x, y, size, ctx, img) {
         // la posicion original en Y
         this.originalY = y;
