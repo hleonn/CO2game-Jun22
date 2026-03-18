@@ -1,11 +1,43 @@
 {
   "builds": [
     {
-      "src": "index.html",
+      "src": "**/*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "javascript/**/*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "img/**/*",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "estilos/**/*.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "audio/**/*.mp3",
       "use": "@vercel/static"
     }
   ],
   "routes": [
+    {
+      "src": "/javascript/(.*)",
+      "dest": "/javascript/$1"
+    },
+    {
+      "src": "/img/(.*)",
+      "dest": "/img/$1"
+    },
+    {
+      "src": "/estilos/(.*)",
+      "dest": "/estilos/$1"
+    },
+    {
+      "src": "/audio/(.*)",
+      "dest": "/audio/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/index.html"
