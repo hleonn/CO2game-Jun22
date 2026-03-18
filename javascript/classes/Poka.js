@@ -1,4 +1,6 @@
-class Poka extends Actors {
+import { Actors } from './Actors.js';
+
+export class Poka extends Actors {
     constructor(x, y, ctx) {
         let image = new Image()
         image.src = "./img/mr_poka.png";//"./img/mr_poka.png"

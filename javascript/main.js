@@ -1,16 +1,25 @@
+// ===== TODOS LOS IMPORTS =====
+import { Actors } from './classes/Actors.js';
+import { Poka } from './classes/Poka.js';
+import { GameTrack } from './classes/GameTrack.js';
+import { Hamburger } from './classes/Hamburger.js';
+import { Coca } from './classes/Coca.js';
+import { Donuts } from './classes/Donuts.js';
+import { Potatos } from './classes/Potatos.js';
+import { Joku } from './classes/Joku.js';
+import { Rat } from './classes/Rat.js';
+
+// ===== CONSTANTES =====
 const canvas = document.getElementById("workArea")
 const ctx = canvas.getContext("2d")
-
-// NOTE: js load code from caller path, not relative to this file path
 const soundtrack = new Audio('./audio/main.mp3');
 
 let animationFrameReqID = null;
 let enemiesIntervalID = null;
 let junkFoodIntervalID = null;
+let gameTrack = null; // <-- AÑADIDO: referencia al fondo
 
-const keys = {
-    jump: false,
-};
+const keys = { jump: false };
 
 const CANVAS_DIMENSIONS = {
     width: 900,
@@ -18,89 +27,68 @@ const CANVAS_DIMENSIONS = {
 };
 
 const _UNDERGROUND_HEIGHT = 40;
-const _MAP_TRACK_HEIGHT = 40;
-
 const MR_POKA_SIZE = 80;
 const MR_POKA_OFFSET = 40;
 
-const HAMBURGER_SIZE = 40;
-const COCA_SIZE = 40;
-const DONUTS_SIZE = 40;
-const POTATOS_SIZE = 60;
-const MR_JOKU_SIZE = 200;
+let rats = [];
+let undergroundRats = [];
+let JunkyFood = [];
 
-const RAT_OFFSET = 60;
-
-let rats = []
-let undergroundRats = []
-//NUEVO
-let JunkyFood = []
-
-const pokaY = CANVAS_DIMENSIONS.height-MR_POKA_SIZE-MR_POKA_OFFSET;
+const pokaY = CANVAS_DIMENSIONS.height - MR_POKA_SIZE - MR_POKA_OFFSET;
 let poka = null;
 
-// NOTE: js load code from caller path, not relative to this file path
-let gameOver = new Image()
-gameOver.src = "./img/GAMEOVER1.png";
+// ===== FUNCIÓN INTERSECTS =====
+function intersects(r1, r2) {
+    return !(r2.x > (r1.x + r1.w) ||
+        (r2.x + r2.w) < r1.x ||
+        r2.y > (r1.y + r1.h) ||
+        (r2.y + r2.h) < r1.y);
+}
 
-// const jokuY = CANVAS_DIMENSIONS.height-MR_JOKU_SIZE;//*************************** */
-// const joku = new Joku(500,0,ctx)
-// const hamburger = new Hamburger(50,0,ctx) //Ubicacion */
-// const coca = new Coca(200,0,ctx) //Ubicacion */
-// const donuts = new Donuts(800,0,ctx) //Ubicacion */
-// const potatos = new Potatos(300,0,ctx) //Ubicacion */
+// ===== FUNCIÓN STARTGAME =====
+function startGame() {
+    // <-- AÑADIDO: crear el fondo
+    gameTrack = new GameTrack(CANVAS_DIMENSIONS.width, CANVAS_DIMENSIONS.height, ctx);
 
-function startGame(){
-    // reset
-    poka = new Poka(10, pokaY, ctx) //instancia
+    poka = new Poka(10, pokaY, ctx);
     JunkyFood = [];
     rats = [];
     undergroundRats = [];
 
     document.getElementById("start").style.display = 'none';
     document.getElementById("gameover").style.display = 'none';
-    canvas.classList.remove("noShow")
-    updateWorkArea()
+    canvas.classList.remove("noShow");
 
-    //MUSICA*******************/
+    updateWorkArea();
+
     soundtrack.currentTime = 0;
     soundtrack.play();
 
-    // when the game starts, create a timer to automatically add a new enemy every 500ms
-    enemiesIntervalID = setInterval( () => {
-        ratsEnemies()
+    enemiesIntervalID = setInterval(() => {
+        ratsEnemies();
     }, 500);
-    
-    // NUEVO
-    junkFoodIntervalID = setInterval( () => {
-        addRandomJunkFood()
+
+    junkFoodIntervalID = setInterval(() => {
+        addRandomJunkFood();
     }, 1000);
 }
 
-function intersects(r1, r2) { // -> should return a boolean
-        return !(r2.x > (r1.x + r1.w) ||
-                 (r2.x + r2.w) < r1.x ||
-                 r2.y > (r1.y+r1.h) ||
-                 (r2.y+r2.h) < r1.y);
-}
+// ===== HACER STARTGAME GLOBAL =====
+window.startGame = startGame;
 
-//actors.moverAlFrente()
-//actors.damage(100)// cuando tenga 1000 puntos recibira dano
-
+// ===== UPDATE WORK AREA =====
 function updateWorkArea() {
-    // console.log("running working area")
-    ctx.clearRect(0, 0, 900, 600)
+    ctx.clearRect(0, 0, 900, 600);
 
-    new GameTrack(CANVAS_DIMENSIONS.width, CANVAS_DIMENSIONS.height, ctx)
+    // <-- CAMBIADO: usar la referencia y llamar a draw()
+    if (gameTrack) {
+        gameTrack.draw();
+    }
 
     if (!poka.estaVivo()) {
-        // pause and reset soundtrack
         soundtrack.pause();
-
-        const restart = document.getElementById("gameover")
-        restart.style.display = "block"
-        canvas.classList.add("noShow")
-
+        document.getElementById("gameover").style.display = "block";
+        canvas.classList.add("noShow");
         cancelAnimationFrame(animationFrameReqID);
         clearInterval(enemiesIntervalID);
         clearInterval(junkFoodIntervalID);
@@ -109,148 +97,100 @@ function updateWorkArea() {
 
     poka.animate(keys);
 
-
-    //RESTAR PUNTOS AL TOCAR RATA
     rats.forEach((ratInstance, index) => {
         if (ratInstance == null) return;
-
-        ratInstance.x -= 5
-        ratInstance.redraw()
+        ratInstance.x -= 5;
+        ratInstance.redraw();
 
         if (intersects(ratInstance.position(), poka.position())) {
-            // console.log('substract points', {
-            //     poka: poka.position(),
-            //     rat: ratInstance.position(),
-            // });
-            poka.damage(500);//RESTAR VIDA
-            rats[index] = null;    
+            poka.damage(500);
+            rats[index] = null;
         }
-    })
+    });
 
-    undergroundRats.forEach((ratInstance) =>{
-        ratInstance.redraw()
-    })
-                                    //CAIDA DE OBJETOS
-    // make mr joku fall
-    //joku.y += 3
-    // joku.redraw()
-    // // make hamburger fall
-    // hamburger.y += 3
-    // hamburger.redraw()
-    
+    undergroundRats.forEach((ratInstance) => {
+        ratInstance.redraw();
+    });
 
-    //NEW
-    JunkyFood.forEach((elem, index)=> {
+    JunkyFood.forEach((elem, index) => {
         if (elem == null) return;
-
-        elem.y += 1
-        //elem.x += 1
-        elem.redraw ()
+        elem.y += 1;
+        elem.redraw();
 
         if (intersects(elem.position(), poka.position())) {
-            // console.log('add points', {
-            //     poka: poka.position(),
-            //     junkyFood: elem.position(),
-            // });
-
-            poka.heal(100);//SUMAR VIDA
-
+            poka.heal(100);
             JunkyFood[index] = null;
         }
-    })
+    });
 
-
-
-//         poka.damage(8);//SUMAR VIDA
-//     }
-// })
-
-
-    mostrarDatos(poka.vida, poka.x, poka.y)
-    animationFrameReqID = requestAnimationFrame(updateWorkArea)
+    mostrarDatos(poka.vida, poka.x, poka.y);
+    animationFrameReqID = requestAnimationFrame(updateWorkArea);
 }
 
-function mostrarDatos(vida,x,y){
-    ctx.font="30px Arial"
-    ctx.fillText(vida,50,40)
-    ctx.fillStyle = "grey";
-    ctx.font="10 px Arial"
-    ctx.fillText(`X:${x}, Y${y}`,750,40)
-    ctx.fillStyle = "yellow";
-}
-//ALEATORIEDAD DE LAS RATAS
-function ratsEnemies (){//********* */
-    const ratasEnElPiso = Math.floor(Math.random()*40)
-    const ratasEnSubsuelo = Math.floor(Math.random()*40)
-    const numeros = [1,32,5,38,29] //****** */
+// ===== RATAS ENEMIGAS =====
+function ratsEnemies() {
+    const ratasEnElPiso = Math.floor(Math.random() * 40);
+    const ratasEnSubsuelo = Math.floor(Math.random() * 40);
+    const numeros = [1, 32, 5, 38, 29];
 
     if (numeros.includes(ratasEnElPiso)) {
-        // console.log("Add enemy")
-        // const randomOffset = Math.floor(Math.random()*MAP_TRACK.height)
-        const ratY = CANVAS_DIMENSIONS.height-_UNDERGROUND_HEIGHT-Rat.size; // randomOffset;
-        const rat = new Rat(850, ratY, ctx); // instance
-        rats.push(rat)
+        const ratY = CANVAS_DIMENSIONS.height - _UNDERGROUND_HEIGHT - Rat.size;
+        const rat = new Rat(850, ratY, ctx);
+        rats.push(rat);
     }
 
-    // add rats to underground
     if (numeros.includes(ratasEnSubsuelo)) {
-        const ratY = CANVAS_DIMENSIONS.height-Rat.size+20; // randomOffset;
-        const rat = new Rat(CANVAS_DIMENSIONS.width, ratY, ctx); // instance
-        undergroundRats.push(rat)
+        const ratY = CANVAS_DIMENSIONS.height - Rat.size + 20;
+        const rat = new Rat(CANVAS_DIMENSIONS.width, ratY, ctx);
+        undergroundRats.push(rat);
     }
 }
 
-                                                //NUEVO ALEATORIEDAD DE LA COMIDA
-function addRandomJunkFood(){
-    const randomJunkyFoodType = Math.floor(Math.random()*40)
-    const randomX = Math.floor(Math.random()* CANVAS_DIMENSIONS.width)
-    if (randomJunkyFoodType > 0 && randomJunkyFoodType < 10) {
-        let pott= new Potatos(randomX, 0, ctx)
-        JunkyFood.push (pott)
-    }
+// ===== COMIDA CHATARRA =====
+function addRandomJunkFood() {
+    const randomJunkyFoodType = Math.floor(Math.random() * 40);
+    const randomX = Math.floor(Math.random() * CANVAS_DIMENSIONS.width);
 
-    if (randomJunkyFoodType >= 10 && randomJunkyFoodType < 20) {
-        let cok= new Coca(randomX, 0, ctx)
-        JunkyFood.push (cok)
+    if (randomJunkyFoodType < 10) {
+        let pott = new Potatos(randomX, 0, ctx);
+        JunkyFood.push(pott);
+    } else if (randomJunkyFoodType < 20) {
+        let cok = new Coca(randomX, 0, ctx);
+        JunkyFood.push(cok);
+    } else if (randomJunkyFoodType < 30) {
+        let don = new Donuts(randomX, 0, ctx);
+        JunkyFood.push(don);
+    } else if (randomJunkyFoodType < 40) {
+        let hambu = new Hamburger(randomX, 0, ctx);
+        JunkyFood.push(hambu);
     }
-    
-    if (randomJunkyFoodType >= 20 && randomJunkyFoodType < 30) {
-        let don= new Donuts(randomX, 0, ctx)
-        JunkyFood.push (don)
-    }
-
-    if (randomJunkyFoodType >= 30 && randomJunkyFoodType < 40) {
-            let hambu= new Hamburger(randomX, 0, ctx)
-            JunkyFood.push (hambu)
-      }
 }
 
-//LEFT & RIGHT MOVE
+// ===== MOSTRAR DATOS =====
+function mostrarDatos(vida, x, y) {
+    ctx.font = "30px Arial";
+    ctx.fillText(vida, 50, 40);
+    ctx.fillStyle = "grey";
+    ctx.font = "10px Arial";
+    ctx.fillText(`X:${x}, Y${y}`, 750, 40);
+    ctx.fillStyle = "yellow";
+}
+
+// ===== EVENT LISTENERS =====
 document.addEventListener("keydown", (event) => {
     if (event.key == "ArrowLeft") {
-        
-        poka.moverAtras()
+        poka?.moverAtras();
     }
-
-    if (event.key ==  "ArrowRight") {
-        // console.log("Mover a la Derecha")
-        poka.moverAlFrente()
+    if (event.key == "ArrowRight") {
+        poka?.moverAlFrente();
     }
-
     if (event.key == " ") {
         keys.jump = true;
     }
-})
+});
 
 document.addEventListener('keyup', (evt) => {
     if (evt.key == " ") {
         keys.jump = false;
     }
 });
-
-// document.body.onkeyup = function(e){
-//     if(e.keyCode == 32){
-//         alert("space bar")
-//     }
-// }
-
