@@ -7,51 +7,64 @@ export class Poka extends Actors {
 
         super(x, y, 80, ctx, image);
 
+        // ===== SPRITES =====
+        this.imgNormal = image;
+
+        this.imgViejo = new Image();
+        this.imgViejo.src = "./img/mr_oldpoka.png";
+
+        // ===== TAMAÑOS Y OFFSETS POR SPRITE =====
+        // mr_poka.png:    tamaño base 80px, sin offset
+        // mr_oldpoka.png: se dibuja más grande y un poco más arriba
+        //                 para que visualmente ocupe el mismo espacio
+        this.tamanoNormal = 80;
+        this.tamanoViejo  = 100;  // más grande para compensar transparencias
+        this.offsetYViejo = -20;  // sube 20px para que no se hunda en el suelo
+
         // ===== CONTADORES POR TIPO =====
         this.contadorHamburguesas = 0;
-        this.contadorCocas = 0;
-        this.contadorDonas = 0;
-        this.contadorPapas = 0;
+        this.contadorCocas        = 0;
+        this.contadorDonas        = 0;
+        this.contadorPapas        = 0;
 
         // ===== FACTORES DE CONVERSIÓN =====
         this.factores = {
-            hamburguesa: { kcal: 1000, co2: 2.5, costo: 150, pesoPorUnidad: 1.0 },
+            hamburguesa: { kcal: 1000, co2: 2.5, costo: 150, pesoPorUnidad: 1.0   },
             refresco:    { kcal: 500,  co2: 0.5, costo: 25,  pesoPorUnidad: 0.133 },
             dona:        { kcal: 600,  co2: 1.0, costo: 50,  pesoPorUnidad: 0.285 },
-            papas:       { kcal: 400,  co2: 1.5, costo: 50,  pesoPorUnidad: 0.2 }
+            papas:       { kcal: 400,  co2: 1.5, costo: 50,  pesoPorUnidad: 0.2   }
         };
 
         // ===== ESTADÍSTICAS =====
-        this.totalKcal     = 0;
-        this.totalCO2      = 0;
-        this.totalGasto    = 0;
-        this.pesoGanado    = 0;
-        this.pesoInicial   = 70;
+        this.totalKcal            = 0;
+        this.totalCO2             = 0;
+        this.totalGasto           = 0;
+        this.pesoGanado           = 0;
+        this.pesoInicial          = 70;
         this.ultimoIncrementoPeso = 0;
-        this.añosPerdidos  = 0;
+        this.añosPerdidos         = 0;
 
         // ===== ESTADOS =====
         this.estado         = "NORMAL";
         this.estadoAnterior = "NORMAL";
 
         // ===== EFECTOS VISUALES =====
-        this.temblor       = 0;
-        this.visionBorrosa = 0;
+        this.temblor        = 0;
+        this.visionBorrosa  = 0;
         this.tamanoOriginal = 80;
+        this.drawOffsetY    = 0; // offset de dibujo según sprite activo
 
-        // ===== FÍSICA MARIO BROS (usa dy/grounded de Actors) =====
-        this.gravedad         = 0.6;   // Más suave = arco más "flotante" como Mario
-        this.fuerzaSaltoBase  = -14;   // Impulso inicial
-        this.saltando         = false;
-        this.tiempoSalto      = 0;
-        this.tiempoMaxSalto   = 10;    // Frames que puede extender el salto
-        this.extension        = 0.9;   // Reducción por frame al mantener presionado
-        this.corteSalto       = -4;    // Velocidad máx. hacia arriba al soltar
+        // ===== FÍSICA MARIO BROS =====
+        this.gravedad        = 0.6;
+        this.fuerzaSaltoBase = -14;
+        this.saltando        = false;
+        this.tiempoSalto     = 0;
+        this.tiempoMaxSalto  = 10;
+        this.extension       = 0.9;
+        this.corteSalto      = -4;
+        this.dy              = 0;
 
-        // Evitar conflicto con Actors: usar dy de la clase padre
-        this.dy = 0;
-
-        console.log("🆕 Poka creado con física Mario Bros mejorada");
+        console.log("🆕 Poka creado");
     }
 
     // ===================================================
@@ -59,11 +72,9 @@ export class Poka extends Actors {
     // ===================================================
 
     aplicarFisica() {
-        // Gravedad siempre activa
         this.dy += this.gravedad;
         this.y  += this.dy;
 
-        // Detectar suelo
         if (this.y >= this.originalY) {
             this.y        = this.originalY;
             this.dy       = 0;
@@ -76,25 +87,21 @@ export class Poka extends Actors {
     }
 
     intentarSaltar(keys) {
-        // ── Inicio del salto: solo desde el suelo ──
         if (keys.jump && this.grounded) {
-            this.dy       = this.fuerzaSaltoBase;   // Impulso único
-            this.saltando = true;
+            this.dy          = this.fuerzaSaltoBase;
+            this.saltando    = true;
             this.tiempoSalto = 1;
-            this.grounded = false;
+            this.grounded    = false;
         }
 
-        // ── Extensión del salto: mantener presionado da más altura ──
         if (keys.jump && this.saltando && this.tiempoSalto < this.tiempoMaxSalto) {
-            // Reducir gradualmente en lugar de resetear
             this.dy -= this.extension;
             this.tiempoSalto++;
         }
 
-        // ── Corte de salto: soltar el botón acorta el salto (como Mario) ──
         if (!keys.jump && this.saltando && this.dy < this.corteSalto) {
-            this.dy = this.corteSalto;
-            this.saltando = false; // No más extensión este salto
+            this.dy       = this.corteSalto;
+            this.saltando = false;
         }
     }
 
@@ -115,45 +122,61 @@ export class Poka extends Actors {
 
     aplicarEfectos() {
         // Resetear cada frame
-        this.velocidad    = 50;
-        this.temblor      = 0;
+        this.velocidad     = 50;
+        this.temblor       = 0;
         this.visionBorrosa = 0;
-        this.size         = this.tamanoOriginal;
 
-        // Penalizaciones por estado — el personaje se vuelve más lento y torpe
         switch (this.estado) {
             case "SOBREPESO":
-                this.velocidad        = 45;
-                this.fuerzaSaltoBase  = -13;
-                this.size             = this.tamanoOriginal + 3;
+                this.velocidad       = 45;
+                this.fuerzaSaltoBase = -13;
+                this.size            = this.tamanoNormal;
+                this.drawOffsetY     = 0;
+                this.img             = this.imgNormal;
                 break;
+
             case "OBESO":
-                this.velocidad        = 40;
-                this.fuerzaSaltoBase  = -11;
-                this.size             = this.tamanoOriginal + 6;
+                this.velocidad       = 40;
+                this.fuerzaSaltoBase = -11;
+                this.size            = this.tamanoNormal;
+                this.drawOffsetY     = 0;
+                this.img             = this.imgNormal;
                 break;
+
             case "SEVERO":
-                this.velocidad        = 35;
-                this.fuerzaSaltoBase  = -9;
-                this.size             = this.tamanoOriginal + 10;
-                this.temblor          = 1;
+                this.velocidad       = 35;
+                this.fuerzaSaltoBase = -9;
+                this.temblor         = 1;
+                this.size            = this.tamanoViejo;   // más grande
+                this.drawOffsetY     = this.offsetYViejo;  // sube para no hundirse
+                this.img             = this.imgViejo;
                 break;
+
             case "PREDIABETES":
-                this.velocidad        = 30;
-                this.fuerzaSaltoBase  = -7;
-                this.size             = this.tamanoOriginal - 5;
-                this.temblor          = 2;
-                this.visionBorrosa    = 1;
+                this.velocidad       = 28;
+                this.fuerzaSaltoBase = -7;
+                this.temblor         = 2;
+                this.visionBorrosa   = 1;
+                this.size            = this.tamanoViejo;
+                this.drawOffsetY     = this.offsetYViejo;
+                this.img             = this.imgViejo;
                 break;
+
             case "DIABETES":
-                this.velocidad        = 20;
-                this.fuerzaSaltoBase  = -5;
-                this.size             = this.tamanoOriginal - 10;
-                this.temblor          = 3;
-                this.visionBorrosa    = 2;
+                this.velocidad       = 18;
+                this.fuerzaSaltoBase = -5;
+                this.temblor         = 3;
+                this.visionBorrosa   = 2;
+                this.size            = this.tamanoViejo;
+                this.drawOffsetY     = this.offsetYViejo;
+                this.img             = this.imgViejo;
                 break;
+
             default: // NORMAL
-                this.fuerzaSaltoBase  = -14;
+                this.fuerzaSaltoBase = -14;
+                this.size            = this.tamanoNormal;
+                this.drawOffsetY     = 0;
+                this.img             = this.imgNormal;
                 break;
         }
     }
@@ -163,16 +186,16 @@ export class Poka extends Actors {
     // ===================================================
 
     comer(tipo, factor) {
-        if (tipo === 'hamburguesa') this.contadorHamburguesas++;
-        else if (tipo === 'refresco') this.contadorCocas++;
-        else if (tipo === 'dona')     this.contadorDonas++;
-        else if (tipo === 'papas')    this.contadorPapas++;
+        if      (tipo === 'hamburguesa') this.contadorHamburguesas++;
+        else if (tipo === 'refresco')    this.contadorCocas++;
+        else if (tipo === 'dona')        this.contadorDonas++;
+        else if (tipo === 'papas')       this.contadorPapas++;
 
-        this.totalKcal    += factor.kcal;
-        this.totalCO2     += factor.co2;
-        this.totalGasto   += factor.costo;
-        this.pesoGanado   += factor.pesoPorUnidad;
-        this.ultimoIncrementoPeso = factor.pesoPorUnidad;
+        this.totalKcal            += factor.kcal;
+        this.totalCO2             += factor.co2;
+        this.totalGasto           += factor.costo;
+        this.pesoGanado           += factor.pesoPorUnidad;
+        this.ultimoIncrementoPeso  = factor.pesoPorUnidad;
 
         this.heal(100);
         this.actualizarEstado();
@@ -180,12 +203,12 @@ export class Poka extends Actors {
     }
 
     comerHamburguesa() { this.comer('hamburguesa', this.factores.hamburguesa); }
-    comerCoca()        { this.comer('refresco',    this.factores.refresco); }
-    comerDona()        { this.comer('dona',        this.factores.dona); }
-    comerPapas()       { this.comer('papas',       this.factores.papas); }
+    comerCoca()        { this.comer('refresco',    this.factores.refresco);    }
+    comerDona()        { this.comer('dona',        this.factores.dona);        }
+    comerPapas()       { this.comer('papas',       this.factores.papas);       }
 
     // ===================================================
-    //  ESTADO Y ESTADÍSTICAS
+    //  ESTADO
     // ===================================================
 
     actualizarEstado() {
@@ -197,21 +220,28 @@ export class Poka extends Actors {
         else if (this.pesoGanado >= 10)   this.estado = "OBESO";
         else if (this.pesoGanado >= 5)    this.estado = "SOBREPESO";
         else                              this.estado = "NORMAL";
+
+        if (this.estado !== this.estadoAnterior) {
+            console.log(`⚠️ Estado: ${this.estadoAnterior} → ${this.estado}`);
+            if (this.estado === "SEVERO") {
+                console.log("👴 Poka envejece: activando sprite mr_oldpoka");
+            }
+        }
     }
 
     calcularAñosPerdidos() {
-        const porPeso   = Math.floor(this.pesoGanado / 5) * 2;
-        const porCO2    = Math.floor(this.totalCO2 / 100);
+        const porPeso     = Math.floor(this.pesoGanado / 5) * 2;
+        const porCO2      = Math.floor(this.totalCO2 / 100);
         const totalComida = this.contadorHamburguesas + this.contadorCocas +
-            this.contadorDonas + this.contadorPapas;
-        const porComida = Math.floor(totalComida / 20);
+            this.contadorDonas        + this.contadorPapas;
+        const porComida   = Math.floor(totalComida / 20);
         this.añosPerdidos = porPeso + porCO2 + porComida;
     }
 
     calcularEsperanzaVida() {
-        let esperanza = 80;
-        esperanza -= this.pesoGanado * 1.5;
-        esperanza -= Math.floor(this.totalCO2 / 50);
+        let esperanza  = 80;
+        esperanza     -= this.pesoGanado * 1.5;
+        esperanza     -= Math.floor(this.totalCO2 / 50);
         return Math.max(0, Math.floor(esperanza));
     }
 
@@ -234,17 +264,23 @@ export class Poka extends Actors {
             this.ctx.filter = `blur(${this.visionBorrosa}px)`;
         }
 
-        super.redraw();
+        // Dibujar sprite con offset Y para alinear al suelo
+        if (this.img && this.img.complete) {
+            this.ctx.drawImage(
+                this.img,
+                this.x,
+                this.y + this.drawOffsetY,  // ← offset aplicado solo al dibujo
+                this.size,
+                this.size
+            );
+        }
 
-        // Iconos de estado
-        if (this.estado === "PREDIABETES") {
-            this.ctx.font      = "16px Arial";
-            this.ctx.fillStyle = "#ff6600";
-            this.ctx.fillText("⚠️", this.x - 10, this.y - 10);
-        } else if (this.estado === "DIABETES") {
+        // Ícono de diabetes
+        if (this.estado === "DIABETES") {
+            this.ctx.filter    = "none";
             this.ctx.font      = "20px Arial";
             this.ctx.fillStyle = "#ff0000";
-            this.ctx.fillText("💉", this.x - 15, this.y - 15);
+            this.ctx.fillText("💉", this.x - 5, this.y + this.drawOffsetY - 10);
         }
 
         this.ctx.restore();
@@ -252,19 +288,19 @@ export class Poka extends Actors {
 
     getEstadisticas() {
         return {
-            hamburguesas:    this.contadorHamburguesas,
-            cocas:           this.contadorCocas,
-            donas:           this.contadorDonas,
-            papas:           this.contadorPapas,
-            totalKcal:       this.totalKcal,
-            co2:             this.totalCO2.toFixed(1),
-            pesoGanado:      this.pesoGanado.toFixed(2),
-            pesoActual:      (this.pesoInicial + this.pesoGanado).toFixed(1),
-            pesoInicial:     this.pesoInicial,
-            gasto:           this.totalGasto,
-            estado:          this.estado,
-            esperanzaVida:   this.calcularEsperanzaVida(),
-            añosPerdidos:    this.añosPerdidos,
+            hamburguesas:     this.contadorHamburguesas,
+            cocas:            this.contadorCocas,
+            donas:            this.contadorDonas,
+            papas:            this.contadorPapas,
+            totalKcal:        this.totalKcal,
+            co2:              this.totalCO2.toFixed(1),
+            pesoGanado:       this.pesoGanado.toFixed(2),
+            pesoActual:       (this.pesoInicial + this.pesoGanado).toFixed(1),
+            pesoInicial:      this.pesoInicial,
+            gasto:            this.totalGasto,
+            estado:           this.estado,
+            esperanzaVida:    this.calcularEsperanzaVida(),
+            añosPerdidos:     this.añosPerdidos,
             ultimoIncremento: this.ultimoIncrementoPeso.toFixed(3)
         };
     }
