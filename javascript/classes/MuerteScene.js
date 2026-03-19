@@ -32,8 +32,12 @@ export class MuerteScene {
 
         try {
             this.muerteSound = new Audio('./audio/muerte.mp3');
-            this.muerteSound.play();
-        } catch(e) {}
+            this.muerteSound.play().catch(() => {
+                console.warn("⚠️ Audio de muerte no disponible — continuando sin sonido");
+            });
+        } catch(e) {
+            console.warn("⚠️ Error al cargar audio de muerte:", e.message);
+        }
     }
 
     // ===================================================
