@@ -380,7 +380,7 @@ canvas.addEventListener('click', (e) => {
         return;
     }
     if (mostrandoGameOver && gameOverCard &&
-        mx >= 250 && mx <= 650 && my >= 550 && my <= 620) {
+        mx >= 250 && mx <= 650 && my >= 495 && my <= 545) {
         gameOverCard = null; muerteScene = null; mostrandoGameOver = false;
         startGame();
     }
