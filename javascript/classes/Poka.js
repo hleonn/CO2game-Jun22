@@ -33,18 +33,30 @@ export class Poka extends Actors {
         this.estado = "NORMAL";
         this.estadoAnterior = "NORMAL";
 
-        // Efectos
+        // Efectos visuales
         this.temblor = 0;
         this.visionBorrosa = 0;
         this.tamanoOriginal = 80;
 
-        // Años perdidos
         this.añosPerdidos = 0;
+
+        // ===== FÍSICA ESTILO MARIO BROS =====
+        this.gravedad = 0.8;
+        this.fuerzaSalto = -15;
+        this.velocidadY = 0;
+        this.enSuelo = true;
+        this.saltando = false;
+        this.saltoPresionado = false;
+        this.tiempoSalto = 0;
+        this.tiempoMaxSalto = 12; // Frames que puede mantener el salto
+
+        // Altura original del suelo
+        this.originalY = y;
+
+        console.log("🆕 Poka creado con física Mario Bros");
     }
 
     comer(tipo, factor) {
-        const pesoAnterior = this.pesoGanado;
-
         if (tipo === 'hamburguesa') this.contadorHamburguesas++;
         else if (tipo === 'refresco') this.contadorCocas++;
         else if (tipo === 'dona') this.contadorDonas++;
@@ -73,74 +85,116 @@ export class Poka extends Actors {
             this.estado = "DIABETES";
             this.vida = 0;
         }
-        else if (this.pesoGanado >= 20) {
-            this.estado = "PREDIABETES";
-        }
-        else if (this.pesoGanado >= 15) {
-            this.estado = "SEVERO";
-        }
-        else if (this.pesoGanado >= 10) {
-            this.estado = "OBESO";
-        }
-        else if (this.pesoGanado >= 5) {
-            this.estado = "SOBREPESO";
-        }
-        else {
-            this.estado = "NORMAL";
-        }
+        else if (this.pesoGanado >= 20) this.estado = "PREDIABETES";
+        else if (this.pesoGanado >= 15) this.estado = "SEVERO";
+        else if (this.pesoGanado >= 10) this.estado = "OBESO";
+        else if (this.pesoGanado >= 5) this.estado = "SOBREPESO";
+        else this.estado = "NORMAL";
     }
 
     calcularAñosPerdidos() {
-        // Cada 5kg de sobrepeso = 2 años perdidos
-        // Cada 100kg CO2 = 1 año perdido
-        // Cada 20 alimentos chatarra = 1 año perdido
         const porPeso = Math.floor(this.pesoGanado / 5) * 2;
         const porCO2 = Math.floor(this.totalCO2 / 100);
         const totalComida = this.contadorHamburguesas + this.contadorCocas +
             this.contadorDonas + this.contadorPapas;
         const porComida = Math.floor(totalComida / 20);
-
         this.añosPerdidos = porPeso + porCO2 + porComida;
     }
 
+    // ===== FÍSICA ESTILO MARIO BROS =====
+    aplicarFisica() {
+        // Aplicar gravedad
+        this.velocidadY += this.gravedad;
+        this.y += this.velocidadY;
+
+        // Detectar suelo
+        if (this.y >= this.originalY) {
+            this.y = this.originalY;
+            this.velocidadY = 0;
+            this.enSuelo = true;
+            this.saltando = false;
+            this.tiempoSalto = 0;
+        } else {
+            this.enSuelo = false;
+        }
+    }
+
+    intentarSaltar(keys) {
+        // Iniciar salto (solo si está en el suelo)
+        if (keys.jump && this.enSuelo) {
+            this.velocidadY = this.fuerzaSalto;
+            this.saltando = true;
+            this.tiempoSalto = 1;
+            console.log("🦘 Salto iniciado");
+        }
+
+        // Salto variable (más alto si mantiene presionado)
+        if (keys.jump && this.saltando && this.tiempoSalto < this.tiempoMaxSalto) {
+            // Mantener impulso hacia arriba
+            this.velocidadY = this.fuerzaSalto;
+            this.tiempoSalto++;
+        }
+    }
+
+    animate(keys) {
+        // Aplicar física ANTES del salto
+        this.aplicarFisica();
+
+        // Intentar saltar (si está en el suelo)
+        this.intentarSaltar(keys);
+
+        // Aplicar efectos de estado
+        this.aplicarEfectos();
+
+        // Dibujar
+        this.redraw();
+    }
+
     aplicarEfectos() {
+        // Velocidad base
         this.velocidad = 50;
-        this.jumpForce = 15;
         this.temblor = 0;
         this.visionBorrosa = 0;
         this.size = this.tamanoOriginal;
 
-        switch(this.estado) {
-            case "SOBREPESO":
-                this.velocidad = 40;
-                this.jumpForce = 12;
-                this.size = this.tamanoOriginal + 5;
-                break;
-            case "OBESO":
-                this.velocidad = 30;
-                this.jumpForce = 9;
-                this.size = this.tamanoOriginal + 10;
-                break;
-            case "SEVERO":
-                this.velocidad = 20;
-                this.jumpForce = 6;
-                this.size = this.tamanoOriginal + 15;
-                this.temblor = 2;
-                break;
-            case "PREDIABETES":
-                this.velocidad = 15;
-                this.jumpForce = 4;
-                this.size = this.tamanoOriginal - 10;
-                this.temblor = 5;
-                this.visionBorrosa = 3;
-                break;
-            case "DIABETES":
-                this.velocidad = 5;
-                this.jumpForce = 2;
-                this.size = this.tamanoOriginal - 20;
-                this.temblor = 10;
-                this.visionBorrosa = 8;
-                break;
+        // Ajustar salto según peso
+        if (this.pesoGanado > 0) {
+            switch(this.estado) {
+                case "SOBREPESO":
+                    this.velocidad = 45;
+                    this.fuerzaSalto = -13;
+                    this.size = this.tamanoOriginal + 3;
+                    break;
+                case "OBESO":
+                    this.velocidad = 40;
+                    this.fuerzaSalto = -11;
+                    this.size = this.tamanoOriginal + 6;
+                    break;
+                case "SEVERO":
+                    this.velocidad = 35;
+                    this.fuerzaSalto = -9;
+                    this.size = this.tamanoOriginal + 10;
+                    this.temblor = 1;
+                    break;
+                case "PREDIABETES":
+                    this.velocidad = 30;
+                    this.fuerzaSalto = -7;
+                    this.size = this.tamanoOriginal - 5;
+                    this.temblor = 2;
+                    this.visionBorrosa = 1;
+                    break;
+                case "DIABETES":
+                    this.velocidad = 20;
+                    this.fuerzaSalto = -5;
+                    this.size = this.tamanoOriginal - 10;
+                    this.temblor = 3;
+                    this.visionBorrosa = 2;
+                    break;
+                default:
+                    this.fuerzaSalto = -15;
+            }
+        } else {
+            this.fuerzaSalto = -15;
         }
     }
 
@@ -152,8 +206,6 @@ export class Poka extends Actors {
     }
 
     redraw() {
-        this.aplicarEfectos();
-
         this.ctx.save();
 
         if (this.temblor > 0) {
@@ -164,10 +216,6 @@ export class Poka extends Actors {
 
         if (this.visionBorrosa > 0) {
             this.ctx.filter = `blur(${this.visionBorrosa}px)`;
-        }
-
-        if (this.estado === "PREDIABETES" || this.estado === "DIABETES") {
-            this.ctx.fillStyle = "rgba(200, 200, 200, 0.3)";
         }
 
         super.redraw();

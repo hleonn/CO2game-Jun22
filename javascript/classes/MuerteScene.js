@@ -8,50 +8,48 @@ export class MuerteScene {
         this.sangre = [];
         this.gameOverLista = false;
 
-        // Guardar posición inicial para animación
         this.startX = poka.x;
         this.startY = poka.y;
-        this.velocidadY = -15; // Salto inicial hacia arriba (negativo)
+        this.velocidadY = -15;
         this.gravedad = 0.8;
 
-        // Sonido de muerte (si tienes)
-        this.muerteSound = new Audio('./audio/muerte.mp3');
-        try { this.muerteSound.play(); } catch(e) {}
+        try {
+            this.muerteSound = new Audio('./audio/muerte.mp3');
+            this.muerteSound.play();
+        } catch(e) {}
     }
 
     update() {
         this.timer++;
 
-        // FASE 0: Salto hacia arriba (0-20)
+        // FASE 0: Salto (0-20)
         if (this.timer < 20) {
             this.poka.y += this.velocidadY;
             this.velocidadY += this.gravedad;
-
-            // Rotación
             this.poka.rotacion = (this.poka.rotacion || 0) + 0.1;
             return false;
         }
 
         // FASE 1: Caída (20-50)
         if (this.timer >= 20 && this.timer < 50) {
-            this.poka.y += 8; // Caída rápida
+            this.poka.y += 8;
 
-            // Crear ratas mientras cae
-            if (this.timer % 10 === 0 && this.ratasDevorando.length < 3) {
+            // Crear enemigos mientras cae
+            if (this.timer % 10 === 0 && this.ratasDevorando.length < 5) {
                 this.ratasDevorando.push({
-                    x: this.poka.x + 50 + (Math.random() * 100),
+                    x: this.poka.x + 50 + (Math.random() * 150),
                     y: this.poka.y + 30,
-                    velocidad: 2
+                    velocidad: 2 + Math.random() * 2,
+                    tipo: Math.random() > 0.5 ? "rata" : "cucaracha"
                 });
             }
             return false;
         }
 
-        // FASE 2: Desaparece (50-80)
+        // FASE 2: Desvanecer (50-80)
         if (this.timer >= 50 && this.timer < 80) {
-            this.poka.alpha = 1 - ((this.timer - 50) / 30); // Desvanecer
+            this.poka.alpha = 1 - ((this.timer - 50) / 30);
 
-            // Mover ratas hacia donde estaba
             this.ratasDevorando.forEach(rata => {
                 rata.x -= rata.velocidad;
             });
@@ -60,19 +58,18 @@ export class MuerteScene {
 
         // FASE 3: Terminar (80+)
         if (this.timer >= 80) {
-            return true; // Terminar, pasar a Game Over
+            return true;
         }
 
         return false;
     }
 
     draw(ctx) {
-        // Fondo oscuro gradual
         const oscuridad = Math.min(0.8, this.timer / 100);
         ctx.fillStyle = `rgba(0,0,0,${oscuridad})`;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Dibujar Poka con rotación y transparencia
+        // Dibujar Poka
         ctx.save();
         ctx.translate(this.poka.x + 40, this.poka.y + 40);
         ctx.rotate(this.poka.rotacion || 0);
@@ -85,24 +82,53 @@ export class MuerteScene {
         this.poka.redraw();
         ctx.restore();
 
-        // Dibujar ratas
+        // Dibujar enemigos devorando
         this.ratasDevorando.forEach(rata => {
-            ctx.fillStyle = "#333333";
-            ctx.beginPath();
-            ctx.ellipse(rata.x, rata.y, 20, 10, 0, 0, Math.PI * 2);
-            ctx.fill();
+            if (rata.tipo === "rata") {
+                // Rata
+                ctx.fillStyle = "#333333";
+                ctx.beginPath();
+                ctx.ellipse(rata.x, rata.y, 20, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
 
-            // Ojos rojos
-            ctx.fillStyle = "#ff0000";
-            ctx.beginPath();
-            ctx.arc(rata.x + 15, rata.y - 5, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(rata.x + 5, rata.y - 5, 2, 0, Math.PI * 2);
-            ctx.fill();
+                // Ojos rojos
+                ctx.fillStyle = "#ff0000";
+                ctx.beginPath();
+                ctx.arc(rata.x + 15, rata.y - 5, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(rata.x + 5, rata.y - 5, 2, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Cucaracha
+                ctx.fillStyle = "#8B4513";
+                ctx.beginPath();
+                ctx.ellipse(rata.x, rata.y, 15, 7, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Antenas
+                ctx.strokeStyle = "#8B4513";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(rata.x + 10, rata.y - 10);
+                ctx.lineTo(rata.x + 15, rata.y - 15);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(rata.x + 5, rata.y - 10);
+                ctx.lineTo(rata.x, rata.y - 15);
+                ctx.stroke();
+            }
+
+            // Sangre
+            if (rata.x < this.poka.x + 100) {
+                ctx.fillStyle = "#aa0000";
+                ctx.beginPath();
+                ctx.arc(rata.x - 5, rata.y + 5, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
         });
 
-        // Texto de muerte
+        // Texto
         ctx.font = "bold 48px Arial";
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";

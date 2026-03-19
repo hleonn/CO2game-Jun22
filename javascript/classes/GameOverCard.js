@@ -5,11 +5,9 @@ export class GameOverCard {
     }
 
     draw(ctx, canvas) {
-        // Fondo negro
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Título
         ctx.font = "bold 60px Arial";
         ctx.fillStyle = "#ff0000";
         ctx.textAlign = "center";
@@ -22,7 +20,7 @@ export class GameOverCard {
         ctx.lineTo(700, 100);
         ctx.stroke();
 
-        // ===== CONSUMO =====
+        // CONSUMO
         ctx.font = "bold 28px Arial";
         ctx.fillStyle = "#ffaa00";
         ctx.fillText("CONSUMO:", 150, 150);
@@ -34,7 +32,7 @@ export class GameOverCard {
         ctx.fillText(`🍩 Donas: ${this.stats.donas}`, 150, 260);
         ctx.fillText(`🍟 Papas: ${this.stats.papas}`, 150, 295);
 
-        // ===== PESO =====
+        // PESO
         ctx.font = "bold 28px Arial";
         ctx.fillStyle = "#00aaff";
         ctx.fillText("PESO:", 500, 150);
@@ -50,7 +48,7 @@ export class GameOverCard {
         ctx.fillStyle = estadoColor;
         ctx.fillText(`Estado: ${this.stats.estado}`, 500, 295);
 
-        // ===== CO₂ =====
+        // CO₂
         ctx.font = "bold 28px Arial";
         ctx.fillStyle = "#00ff00";
         ctx.fillText("🌍 CO₂ TOTAL:", 150, 350);
@@ -58,7 +56,7 @@ export class GameOverCard {
         ctx.fillStyle = "#ffffff";
         ctx.fillText(`${this.stats.co2} kg`, 150, 390);
 
-        // ===== ESPERANZA DE VIDA =====
+        // ESPERANZA DE VIDA
         ctx.font = "bold 28px Arial";
         ctx.fillStyle = "#ff00ff";
         ctx.fillText("⏳ ESPERANZA:", 500, 350);
@@ -69,7 +67,7 @@ export class GameOverCard {
         ctx.fillStyle = esperanzaColor;
         ctx.fillText(`${this.stats.esperanzaVida} años`, 500, 400);
 
-        // ===== AÑOS PERDIDOS (NUEVO) =====
+        // AÑOS PERDIDOS
         ctx.font = "bold 28px Arial";
         ctx.fillStyle = "#ff6600";
         ctx.fillText("📉 AÑOS PERDIDOS:", 150, 460);
@@ -77,7 +75,7 @@ export class GameOverCard {
         ctx.fillStyle = "#ff8800";
         ctx.fillText(`${this.stats.añosPerdidos} años`, 150, 510);
 
-        // ===== GASTO =====
+        // GASTO
         ctx.font = "bold 28px Arial";
         ctx.fillStyle = "#ffff00";
         ctx.fillText("💰 GASTO TOTAL:", 500, 460);
@@ -91,7 +89,7 @@ export class GameOverCard {
         ctx.fillStyle = "#ffffff";
         ctx.fillText(`$${totalGasto}`, 500, 510);
 
-        // ===== BOTÓN DE REINICIO =====
+        // BOTÓN
         ctx.fillStyle = "#333333";
         ctx.fillRect(250, 550, 400, 70);
         ctx.strokeStyle = "#ffff00";
