@@ -21,7 +21,7 @@ body{
     align-items: center;
 
 
-} 
+}
 button{
     padding:15px;
     background-color:yellow;
@@ -37,7 +37,7 @@ button:hover{
     background-color: black;
     color: white;
     border: 3px solid white;
-} 
+}
 canvas{
     background-color: white;
     border: 1px solid black;
