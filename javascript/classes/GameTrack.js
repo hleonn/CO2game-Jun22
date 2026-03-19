@@ -3,68 +3,83 @@ export class GameTrack {
         this.width = width;
         this.height = height;
         this.ctx = ctx;
-        this.image = new Image();
-        this.image.src = "./img/track.jpeg";
-        this.loaded = false;
 
-        this.image.onload = () => {
-            console.log("✅ Fondo cargado correctamente");
-            this.loaded = true;
-            this.draw(); // Dibuja inmediatamente cuando carga
-        };
+        this.fondo1 = new Image();
+        this.fondo1.src = "./img/track.jpeg";
 
-        this.image.onerror = (err) => {
-            console.log("❌ Error cargando track.jpeg:", err);
-            console.log("📁 Ruta intentada:", this.image.src);
-            this.loaded = false;
-        };
+        this.fondo2 = new Image();
+        this.fondo2.src = "./img/track02.png";
+
+        this.fondoActual = this.fondo1;
+        this.offsetX = 0;
+        this.cambioFondo = false;
+        this.umbralCambio = 800;
+
+        this.cargado1 = false;
+        this.cargado2 = false;
+
+        // Límites del mundo
+        this.limiteIzquierdo = 0;
+        this.limiteDerecho = 2000; // Cuánto puede avanzar
+
+        this.fondo1.onload = () => { this.cargado1 = true; };
+        this.fondo2.onload = () => { this.cargado2 = true; };
     }
 
-    draw() {
-        if (this.loaded && this.image.complete) {
-            // Dibujar la imagen si cargó
-            this.ctx.drawImage(this.image, 0, 0, this.width, this.height);
-        } else {
-            // Fondo de emergencia (estilo pista)
+    actualizarScroll(pokaX) {
+        const centroPantalla = this.width / 2;
 
-            // Cielo
-            this.ctx.fillStyle = "#87CEEB"; // cielo azul
-            this.ctx.fillRect(0, 0, this.width, this.height - 60);
-
-            // Suelo (pista)
-            this.ctx.fillStyle = "#555555"; // gris asfalto
-            this.ctx.fillRect(0, this.height - 60, this.width, 60);
-
-            // Líneas de la pista
-            this.ctx.strokeStyle = "#FFFFFF";
-            this.ctx.lineWidth = 3;
-            this.ctx.setLineDash([20, 30]);
-
-            // Línea central
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, this.height - 30);
-            this.ctx.lineTo(this.width, this.height - 30);
-            this.ctx.stroke();
-
-            // Línea superior de la pista
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, this.height - 60);
-            this.ctx.lineTo(this.width, this.height - 60);
-            this.ctx.stroke();
-
-            // Resetear dash
-            this.ctx.setLineDash([]);
-
-            // Pequeñas líneas blancas en los bordes
-            this.ctx.fillStyle = "#FFFFFF";
-            for (let i = 0; i < this.width; i += 50) {
-                this.ctx.fillRect(i, this.height - 65, 20, 3);
-            }
-
-            // Texto informativo
-            this.ctx.font = "16px Arial";
-            this.ctx.fillStyle = "#FFFFFF";
-            this.ctx.fillText("Cargando fondo...", 20, 50);
+        // El scroll solo se activa cuando Poka pasa el centro
+        if (pokaX > centroPantalla + 50) {
+            // Mover el fondo hacia la izquierda (simula avance)
+            this.offsetX = Math.min(
+                this.limiteDerecho,
+                this.offsetX + (pokaX - centroPantalla - 50) * 0.5
+            );
+        } else if (pokaX < centroPantalla - 50) {
+            // Mover el fondo hacia la derecha (simula retroceso)
+            this.offsetX = Math.max(
+                this.limiteIzquierdo,
+                this.offsetX - (centroPantalla - 50 - pokaX) * 0.5
+            );
         }
+
+        // Cambiar fondo
+        if (!this.cambioFondo && this.offsetX > this.umbralCambio) {
+            this.cambioFondo = true;
+            this.fondoActual = this.fondo2;
+        }
+    }
+
+    draw(pokaX = 0) {
+        this.actualizarScroll(pokaX);
+
+        const imagen = this.fondoActual;
+
+        if (imagen && imagen.complete && imagen.naturalHeight > 0) {
+            // Dibujar el fondo con desplazamiento
+            const x = -this.offsetX;
+            this.ctx.drawImage(imagen, x, 0, this.width * 3, this.height);
+
+            // Si el fondo se está acabando, repetirlo
+            if (x + this.width * 3 < this.width) {
+                this.ctx.drawImage(imagen, x + this.width * 3, 0, this.width * 3, this.height);
+            }
+        } else {
+            // Fondo de emergencia
+            this.ctx.fillStyle = "#87CEEB";
+            this.ctx.fillRect(0, 0, this.width, this.height);
+            this.ctx.fillStyle = "#8B4513";
+            this.ctx.fillRect(0, this.height-60, this.width, 60);
+        }
+
+        // Barra de progreso
+        const progreso = Math.min(100, (this.offsetX / this.umbralCambio) * 100);
+        this.ctx.fillStyle = "rgba(0,0,0,0.5)";
+        this.ctx.fillRect(10, 10, 200, 20);
+        this.ctx.fillStyle = progreso >= 100 ? "#00ff00" : "#ffff00";
+        this.ctx.fillRect(10, 10, 200 * (progreso / 100), 20);
+        this.ctx.strokeStyle = "#ffffff";
+        this.ctx.strokeRect(10, 10, 200, 20);
     }
 }

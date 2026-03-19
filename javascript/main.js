@@ -5,10 +5,18 @@ import { Hamburger } from './classes/Hamburger.js';
 import { Coca } from './classes/Coca.js';
 import { Donuts } from './classes/Donuts.js';
 import { Potatos } from './classes/Potatos.js';
+import { Joku } from './classes/Joku.js';
 import { Rat } from './classes/Rat.js';
+import { Cucaracha } from './classes/Cucaracha.js'; // IMPORTANTE: Debe estar presente
 import { GameOverCard } from './classes/GameOverCard.js';
 import { MuerteScene } from './classes/MuerteScene.js';
 
+const botonSalir = {
+    x: 750, // Posición diferente a pausa
+    y: 10,
+    w: 40,
+    h: 30
+};
 // ===== CONSTANTES =====
 const canvas = document.getElementById("workArea");
 const ctx = canvas.getContext("2d");
@@ -17,28 +25,39 @@ const soundtrack = new Audio('./audio/main.mp3');
 const CANVAS_DIMENSIONS = { width: 900, height: 600 };
 const POKA_VIDA_INICIAL = 2000;
 const DANIO_RATA = 500;
-const VELOCIDAD_RATA = 3; // REDUCIDA de 5 a 3
+const DANIO_CUCARACHA = 250;
+
+// VELOCIDADES
+const VELOCIDAD_RATA = 3;
+const VELOCIDAD_CUCARACHA = 1.5; // Misma velocidad que ratas
 const VELOCIDAD_CAIDA_COMIDA = 1;
+
 const MR_POKA_SIZE = 80;
 const MR_POKA_OFFSET = 40;
 const UNDERGROUND_HEIGHT = 40;
 const POKA_X_INICIAL = 10;
 
-// PROBABILIDADES DE APARICIÓN (REDUCIDAS)
-const PROBABILIDAD_RATA = 15; // Antes 40, ahora 15%
-const NUMEROS_MAGICOS = [3, 8, 13, 18, 23]; // Números más espaciados
+// PROBABILIDADES
+const PROBABILIDAD_RATA = 12;     // 12% de probabilidad
+const PROBABILIDAD_CUCARACHA = 12; // Aumentada a 10% para que se vean más
 
-const INTERVALO_RATAS = 800; // AUMENTADO de 500ms a 800ms
+// INTERVALOS
+const INTERVALO_RATAS = 1000;      // 1 segundo
+const INTERVALO_CUCARACHAS = 600;  // Reducido a 800ms para que aparezcan más seguido
 const INTERVALO_COMIDA = 1000;
+
 const RAT_UNDERGROUND_OFFSET = 20;
+const MIN_DISTANCIA_ENTRE_ENEMIGOS = 150; // Píxeles mínimos entre enemigos
 
 // ===== VARIABLES GLOBALES =====
 let animationFrameReqID = null;
 let enemiesIntervalID = null;
+let cucarachasIntervalID = null;
 let junkFoodIntervalID = null;
 let gameTrack = null;
 const keys = { jump: false };
 let rats = [];
+let cucarachas = [];
 let undergroundRats = [];
 let JunkyFood = [];
 let juegoPausado = false;
@@ -50,9 +69,11 @@ let poka = null;
 const pokaY = CANVAS_DIMENSIONS.height - MR_POKA_SIZE - MR_POKA_OFFSET;
 let lastTime = 0;
 let fps = 0;
-
-// Control de tiempo para ratas (evitar que aparezcan muy seguidas)
 let ultimaRataTiempo = 0;
+let ultimaCucarachaLlamada = 0;
+
+// Variables para debug
+let totalCucarachasCreadas = 0;
 
 // ===== INTERSECTS =====
 function intersects(r1, r2) {
@@ -64,14 +85,39 @@ function intersects(r1, r2) {
         (box2.y + box2.h) < box1.y);
 }
 
+// ===== VERIFICAR ESPACIADO ENTRE ENEMIGOS =====
+function puedeAparecerEnemigo(x) {
+    // Verificar distancia con ratas
+    for (let rata of rats) {
+        if (rata && Math.abs(rata.x - x) < MIN_DISTANCIA_ENTRE_ENEMIGOS) {
+            return false;
+        }
+    }
+    // Verificar distancia con cucarachas
+    for (let cuca of cucarachas) {
+        if (cuca && Math.abs(cuca.x - x) < MIN_DISTANCIA_ENTRE_ENEMIGOS) {
+            return false;
+        }
+    }
+    // Verificar distancia con ratas subterráneas
+    for (let rata of undergroundRats) {
+        if (rata && Math.abs(rata.x - x) < MIN_DISTANCIA_ENTRE_ENEMIGOS) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // ===== START GAME =====
 function startGame() {
+    console.log("🎮 Iniciando juego...");
     gameTrack = new GameTrack(CANVAS_DIMENSIONS.width, CANVAS_DIMENSIONS.height, ctx);
     poka = new Poka(POKA_X_INICIAL, pokaY, ctx);
     poka.vida = POKA_VIDA_INICIAL;
 
     JunkyFood = [];
     rats = [];
+    cucarachas = [];
     undergroundRats = [];
 
     muerteScene = null;
@@ -79,6 +125,8 @@ function startGame() {
     mostrandoGameOver = false;
     juegoPausado = false;
     ultimaRataTiempo = 0;
+    ultimaCucarachaLlamada = 0;
+    totalCucarachasCreadas = 0;
 
     document.getElementById("start").style.display = 'none';
     document.getElementById("gameover").style.display = 'none';
@@ -92,6 +140,10 @@ function startGame() {
     enemiesIntervalID = setInterval(() => {
         if (!juegoPausado) ratsEnemies();
     }, INTERVALO_RATAS);
+
+    cucarachasIntervalID = setInterval(() => {
+        if (!juegoPausado) cucarachasEnemies();
+    }, INTERVALO_CUCARACHAS);
 
     junkFoodIntervalID = setInterval(() => {
         if (!juegoPausado) addRandomJunkFood();
@@ -107,7 +159,11 @@ function updateWorkArea() {
     lastTime = now;
 
     ctx.clearRect(0, 0, CANVAS_DIMENSIONS.width, CANVAS_DIMENSIONS.height);
-    if (gameTrack) gameTrack.draw();
+    const pokaXAnterior = poka?.x || 0;
+    // Dibujar fondo con scroll
+    if (gameTrack) {
+        gameTrack.draw(poka?.x || 0);
+    }
 
     // ===== PAUSA =====
     if (juegoPausado) {
@@ -146,6 +202,7 @@ function updateWorkArea() {
 
         cancelAnimationFrame(animationFrameReqID);
         clearInterval(enemiesIntervalID);
+        clearInterval(cucarachasIntervalID);
         clearInterval(junkFoodIntervalID);
 
         animationFrameReqID = requestAnimationFrame(updateWorkArea);
@@ -154,11 +211,13 @@ function updateWorkArea() {
 
     // ===== JUEGO NORMAL =====
     poka.animate(keys);
-
-    // Ratas (con velocidad constante)
+// Limitar movimiento de Poka
+    if (poka.x < 0) poka.x = 0;
+    if (poka.x > 2000) poka.x = 2000; // Mismo límite que el fondo
+    // Ratas
     rats.forEach((rat, i) => {
         if (!rat) return;
-        rat.x -= VELOCIDAD_RATA; // Velocidad constante
+        rat.x -= VELOCIDAD_RATA;
         rat.redraw();
         if (intersects(rat.position(), poka.position())) {
             poka.damage(DANIO_RATA);
@@ -166,10 +225,31 @@ function updateWorkArea() {
         }
     });
 
-    // Limpiar ratas que salieron de la pantalla
-    rats = rats.filter(rat => rat && rat.x > -50);
+    // CUCARACHAS - AHORA VISIBLES
+    cucarachas.forEach((cuca, i) => {
+        if (!cuca) return;
+        cuca.x -= VELOCIDAD_CUCARACHA;
+        cuca.redraw();
+        if (intersects(cuca.position(), poka.position())) {
+            poka.damage(DANIO_CUCARACHA);
+            cucarachas[i] = null;
+        }
+    });
 
-    undergroundRats.forEach(rat => rat?.redraw());
+    // Ratas subterráneas
+    undergroundRats.forEach((rat, i) => {
+        if (!rat) return;
+        rat.x -= VELOCIDAD_RATA;
+        rat.redraw();
+        if (intersects(rat.position(), poka.position())) {
+            poka.damage(DANIO_RATA);
+            undergroundRats[i] = null;
+        }
+    });
+
+    // Limpiar enemigos fuera de pantalla
+    rats = rats.filter(rat => rat && rat.x > -50);
+    cucarachas = cucarachas.filter(cuca => cuca && cuca.x > -50);
     undergroundRats = undergroundRats.filter(rat => rat && rat.x > -50);
 
     // Comida
@@ -187,7 +267,6 @@ function updateWorkArea() {
         }
     });
 
-    // Limpiar comida que cayó al suelo
     JunkyFood = JunkyFood.filter(elem => elem && elem.y < CANVAS_DIMENSIONS.height);
 
     mostrarDatos(poka.vida, poka.x, poka.y, fps);
@@ -198,30 +277,65 @@ function updateWorkArea() {
 function dibujarElementos() {
     if (poka) poka.redraw();
     rats.forEach(rat => rat?.redraw());
+    cucarachas.forEach(cuca => cuca?.redraw());
     undergroundRats.forEach(rat => rat?.redraw());
     JunkyFood.forEach(food => food?.redraw());
 }
 
-// ===== RATAS (CONTROL DE FRECUENCIA) =====
+// ===== RATAS =====
 function ratsEnemies() {
     const ahora = Date.now();
-
-    // Evitar que aparezcan muy seguidas
-    if (ahora - ultimaRataTiempo < 300) return; // Mínimo 300ms entre ratas
+    if (ahora - ultimaRataTiempo < 400) return;
     ultimaRataTiempo = ahora;
 
-    const r1 = Math.floor(Math.random() * 100); // 0-99
-
-    // Solo 15% de probabilidad
-    if (r1 < PROBABILIDAD_RATA) {
-        const y = CANVAS_DIMENSIONS.height - UNDERGROUND_HEIGHT - 45;
-        rats.push(new Rat(850, y, ctx));
+    const probabilidad = Math.floor(Math.random() * 100);
+    if (probabilidad < PROBABILIDAD_RATA) {
+        const x = 900;
+        if (puedeAparecerEnemigo(x)) {
+            const y = CANVAS_DIMENSIONS.height - UNDERGROUND_HEIGHT - 45;
+            rats.push(new Rat(x, y, ctx));
+        }
     }
 
+    // Ratas subterráneas
     const r2 = Math.floor(Math.random() * 100);
-    if (r2 < PROBABILIDAD_RATA) {
-        const y = CANVAS_DIMENSIONS.height - 45 + RAT_UNDERGROUND_OFFSET;
-        undergroundRats.push(new Rat(900, y, ctx));
+    if (r2 < PROBABILIDAD_RATA / 2) {
+        const x = 950;
+        if (puedeAparecerEnemigo(x)) {
+            const y = CANVAS_DIMENSIONS.height - 45 + RAT_UNDERGROUND_OFFSET;
+            undergroundRats.push(new Rat(x, y, ctx));
+        }
+    }
+}
+
+// ===== CUCARACHAS (AHORA CON MAYOR PROBABILIDAD) =====
+function cucarachasEnemies() {
+    const ahora = Date.now();
+    if (ahora - ultimaCucarachaLlamada < 300) return; // Mínimo 300ms
+    ultimaCucarachaLlamada = ahora;
+
+    const probabilidad = Math.floor(Math.random() * 100);
+
+    // Debug: mostrar cada intento
+    console.log(`🪳 Intento cucaracha: prob=${probabilidad}, umbral=${PROBABILIDAD_CUCARACHA}`);
+
+    if (probabilidad < PROBABILIDAD_CUCARACHA) {
+        const x = 900;
+        // Verificar espaciado
+        if (puedeAparecerEnemigo(x)) {
+            // Misma altura que ratas (ras del piso)
+            const y = CANVAS_DIMENSIONS.height - 55;
+
+            // Crear la cucaracha
+            const nuevaCuca = new Cucaracha(x, y, ctx);
+            cucarachas.push(nuevaCuca);
+            totalCucarachasCreadas++;
+
+            console.log(`✅ Cucaracha #${totalCucarachasCreadas} creada en:`, x, y);
+            console.log(`📊 Total cucarachas activas: ${cucarachas.length}`);
+        } else {
+            console.log("❌ Espaciado insuficiente para cucaracha");
+        }
     }
 }
 
@@ -243,9 +357,9 @@ function mostrarDatos(vida, x, y, fps) {
 
     // Fondo HUD
     ctx.fillStyle = "rgba(0,0,0,0.7)";
-    ctx.fillRect(0, 0, 900, 140);
+    ctx.fillRect(0, 0, 900, 200); // Más alto para incluir contador de cucarachas
 
-    // Línea 1
+    // Línea 1 - Vida, CO2, Estado, FPS
     ctx.font = "bold 14px Arial";
     ctx.fillStyle = "#ff5555";
     ctx.fillText("❤️ VIDA:", 10, 20);
@@ -286,7 +400,7 @@ function mostrarDatos(vida, x, y, fps) {
     ctx.strokeStyle = "#fff";
     ctx.strokeRect(250, 40, 200, 15);
 
-    // Línea 3 - Contadores
+    // Línea 3 - Contadores de comida
     ctx.font = "16px Arial";
     ctx.fillStyle = "#ffaa00";
     ctx.fillText(`🍔 ${s.hamburguesas}`, 10, 85);
@@ -297,29 +411,69 @@ function mostrarDatos(vida, x, y, fps) {
     ctx.fillStyle = "#ffaa00";
     ctx.fillText(`🍟 ${s.papas}`, 220, 85);
 
-    // Línea 4 - Esperanza de vida y años perdidos
+    // Línea 4 - Contadores de enemigos (NUEVO)
+    ctx.font = "bold 14px Arial";
+    ctx.fillStyle = "#aa88ff";
+    ctx.fillText(`🐀 Ratas: ${rats.length}`, 10, 115);
+    ctx.fillStyle = "#ffaa88";
+    ctx.fillText(`🪳 Cucarachas: ${cucarachas.length}`, 120, 115);
+    ctx.fillStyle = "#8866aa";
+    ctx.fillText(`🕳️ Subterráneas: ${undergroundRats.length}`, 250, 115);
+
+    // Línea 5 - Esperanza y años perdidos
     ctx.font = "bold 14px Arial";
     const ec = s.esperanzaVida > 60 ? "#00ff00" : (s.esperanzaVida > 40 ? "#ffff00" : "#ff0000");
     ctx.fillStyle = ec;
-    ctx.fillText(`⏳ ESPERANZA: ${s.esperanzaVida} años`, 300, 85);
+    ctx.fillText(`⏳ ESPERANZA: ${s.esperanzaVida} años`, 10, 145);
 
-    // Años perdidos (NUEVO)
     ctx.fillStyle = "#ff6600";
-    ctx.fillText(`📉 AÑOS PERDIDOS: ${s.añosPerdidos}`, 550, 85);
+    ctx.fillText(`📉 AÑOS PERDIDOS: ${s.añosPerdidos}`, 250, 145);
+
+    // ===== BARRA DE AVANCE DE PANTALLA =====
+    const centroPantalla = CANVAS_DIMENSIONS.width / 2;
+    const avance = Math.max(0, x - centroPantalla);
+    const porcentajeAvance = Math.min(100, (avance / 500) * 100);
+
+    ctx.fillStyle = "#333333";
+    ctx.fillRect(600, 125, 200, 15);
+
+    const colorBarra = porcentajeAvance >= 100 ? "#00ff00" : "#ffff00";
+    ctx.fillStyle = colorBarra;
+    ctx.fillRect(600, 125, 200 * (porcentajeAvance / 100), 15);
+
+    ctx.strokeStyle = "#ffffff";
+    ctx.strokeRect(600, 125, 200, 15);
+
+    ctx.font = "bold 12px Arial";
+    ctx.fillStyle = "#ffffff";
+    if (porcentajeAvance < 100) {
+        ctx.fillText(`Zona 1: ${Math.floor(porcentajeAvance)}%`, 610, 120);
+    } else {
+        ctx.fillStyle = "#00ff00";
+        ctx.fillText("✅ ZONA 2: BOSQUE", 610, 120);
+    }
 
     // Botón pausa
     ctx.fillStyle = "#444";
-    ctx.fillRect(800, 10, 40, 30);
+    ctx.fillRect(botonPausa.x, botonPausa.y, botonPausa.w, botonPausa.h);
     ctx.strokeStyle = "#fff";
-    ctx.strokeRect(800, 10, 40, 30);
+    ctx.strokeRect(botonPausa.x, botonPausa.y, botonPausa.w, botonPausa.h);
     ctx.font = "20px Arial";
     ctx.fillStyle = "#fff";
-    ctx.fillText("⏸️", 808, 35);
+    ctx.fillText("⏸️", botonPausa.x + 8, botonPausa.y + 22);
 
+// ===== NUEVO: Botón de SALIR =====
+    ctx.fillStyle = "#aa0000";
+    ctx.fillRect(botonSalir.x, botonSalir.y, botonSalir.w, botonSalir.h);
+    ctx.strokeStyle = "#fff";
+    ctx.strokeRect(botonSalir.x, botonSalir.y, botonSalir.w, botonSalir.h);
+    ctx.font = "bold 18px Arial";
+    ctx.fillStyle = "#fff";
+    ctx.fillText("✖", botonSalir.x + 12, botonSalir.y + 22);
     // Posición
     ctx.font = "10px Arial";
     ctx.fillStyle = "#888";
-    ctx.fillText(`📍 ${x},${y}`, 780, 135);
+    ctx.fillText(`📍 ${Math.floor(x)},${Math.floor(y)}`, 780, 195);
 }
 
 // ===== CLICK =====
@@ -337,7 +491,26 @@ canvas.addEventListener('click', (e) => {
         juegoPausado ? soundtrack.pause() : soundtrack.play();
         return;
     }
+// ===== NUEVO: Botón de SALIR =====
+    if (mx >= botonSalir.x && mx <= botonSalir.x + botonSalir.w &&
+        my >= botonSalir.y && my <= botonSalir.y + botonSalir.h) {
 
+        // Volver al menú principal
+        juegoPausado = false;
+        soundtrack.pause();
+
+        // Limpiar intervalos
+        clearInterval(enemiesIntervalID);
+        clearInterval(cucarachasIntervalID);
+        clearInterval(junkFoodIntervalID);
+        cancelAnimationFrame(animationFrameReqID);
+
+        // Mostrar botón START y ocultar canvas
+        document.getElementById("start").style.display = 'block';
+        canvas.classList.add("noShow");
+
+        return;
+    }
     // Botón de reinicio
     if (mostrandoGameOver && gameOverCard &&
         mx >= 250 && mx <= 650 &&
@@ -363,3 +536,14 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("keyup", (e) => {
     if (e.key === " ") keys.jump = false;
 });
+
+// ===== DEBUG: Mostrar estadísticas cada 10 segundos =====
+setInterval(() => {
+    console.log("=".repeat(50));
+    console.log("📊 ESTADÍSTICAS DE ENEMIGOS:");
+    console.log(`🐀 Ratas activas: ${rats.length}`);
+    console.log(`🪳 Cucarachas activas: ${cucarachas.length}`);
+    console.log(`🕳️ Ratas subterráneas: ${undergroundRats.length}`);
+    console.log(`📈 Total cucarachas creadas: ${totalCucarachasCreadas}`);
+    console.log("=".repeat(50));
+}, 10000);
